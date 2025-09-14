@@ -1,0 +1,22 @@
+# Dataset files
+data/ml-25m/
+
+# Output files
+output/
+
+# SBT and Scala
+target/
+project/target/
+project/project/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

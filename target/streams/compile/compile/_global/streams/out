@@ -1,0 +1,4 @@
+[0m[[0m[31merror[0m] [0m[0mC:\Users\Guy Bensky\Desktop\functional programming projecct\HIT-FP-Spark-Project\src\main\scala\Driver.scala:224:38: ')' expected but string literal found.[0m
+[0m[[0m[31merror[0m] [0m[0m          csvFile.println(s"\"$title\",$count,$avg")[0m
+[0m[[0m[31merror[0m] [0m[0m                                     ^[0m
+[0m[[0m[31merror[0m] [0m[0mone error found[0m
