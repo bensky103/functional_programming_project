@@ -1,7 +1,6 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.BeforeAndAfterAll
-import org.apache.spark.sql.{SparkSession, Dataset}
+import org.apache.spark.sql.Dataset
 
 /**
  * Test suite for TransformStage2 aggregation operations.
@@ -10,21 +9,7 @@ import org.apache.spark.sql.{SparkSession, Dataset}
  * groupBy/aggregate operations and produces expected counts and averages
  * with tiny datasets.
  */
-class TransformStage2Spec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
-
-  var spark: SparkSession = _
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    spark = SparkBootstrap.session("TransformStage2Test")
-  }
-
-  override def afterAll(): Unit = {
-    if (spark != null) {
-      spark.stop()
-    }
-    super.afterAll()
-  }
+class TransformStage2Spec extends AnyFlatSpec with Matchers with SparkTestBase {
 
   /**
    * Creates a tiny in-memory test dataset for Rating objects with multiple ratings per movie.

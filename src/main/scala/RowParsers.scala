@@ -26,19 +26,19 @@ object RowParsers {
       val movieId = row.get(0) match {
         case id: Long => id
         case id: Int => id.toLong
-        case null => throw new IllegalArgumentException("movieId cannot be null")
-        case other => throw new IllegalArgumentException(s"movieId must be numeric, got: ${other.getClass.getSimpleName}")
+        case null => return Left("movieId cannot be null")
+        case other => return Left(s"movieId must be numeric, got: ${other.getClass.getSimpleName}")
       }
 
       val title = row.get(1) match {
         case title: String if title.nonEmpty => title.trim
-        case title: String if title.isEmpty => 
+        case title: String if title.isEmpty =>
           println(s"DEBUG: Empty title found for movieId: $movieId")
-          throw new IllegalArgumentException("title cannot be empty")
-        case null => 
+          return Left("title cannot be empty")
+        case null =>
           println(s"DEBUG: Null title found for movieId: $movieId")
-          throw new IllegalArgumentException("title cannot be null")
-        case other => throw new IllegalArgumentException(s"title must be String, got: ${other.getClass.getSimpleName}")
+          return Left("title cannot be null")
+        case other => return Left(s"title must be String, got: ${other.getClass.getSimpleName}")
       }
 
       val genres = row.get(2) match {
@@ -50,7 +50,7 @@ object RowParsers {
         case null =>
           println(s"DEBUG: Null genres field for movieId: $movieId, title: '$title'")
           List.empty[String]
-        case other => throw new IllegalArgumentException(s"genres must be String, got: ${other.getClass.getSimpleName}")
+        case other => return Left(s"genres must be String, got: ${other.getClass.getSimpleName}")
       }
 
       Movie(movieId, title, genres)
@@ -77,15 +77,15 @@ object RowParsers {
       val userId = row.get(0) match {
         case id: Long => id
         case id: Int => id.toLong
-        case null => throw new IllegalArgumentException("userId cannot be null")
-        case other => throw new IllegalArgumentException(s"userId must be numeric, got: ${other.getClass.getSimpleName}")
+        case null => return Left("userId cannot be null")
+        case other => return Left(s"userId must be numeric, got: ${other.getClass.getSimpleName}")
       }
 
       val movieId = row.get(1) match {
         case id: Long => id
         case id: Int => id.toLong
-        case null => throw new IllegalArgumentException("movieId cannot be null")
-        case other => throw new IllegalArgumentException(s"movieId must be numeric, got: ${other.getClass.getSimpleName}")
+        case null => return Left("movieId cannot be null")
+        case other => return Left(s"movieId must be numeric, got: ${other.getClass.getSimpleName}")
       }
 
       val rating = row.get(2) match {
@@ -93,24 +93,24 @@ object RowParsers {
           if (r >= 0.0 && r <= 5.0) r
           else {
             println(s"DEBUG: Rating out of bounds for userId: $userId, movieId: $movieId, rating: $r")
-            throw new IllegalArgumentException(s"rating must be between 0.0 and 5.0, got: $r")
+            return Left(s"rating must be between 0.0 and 5.0, got: $r")
           }
         case r: Float => 
           val doubleRating = r.toDouble
           if (doubleRating >= 0.0 && doubleRating <= 5.0) doubleRating
           else {
             println(s"DEBUG: Rating out of bounds for userId: $userId, movieId: $movieId, rating: $doubleRating")
-            throw new IllegalArgumentException(s"rating must be between 0.0 and 5.0, got: $doubleRating")
+            return Left(s"rating must be between 0.0 and 5.0, got: $doubleRating")
           }
-        case null => throw new IllegalArgumentException("rating cannot be null")
-        case other => throw new IllegalArgumentException(s"rating must be numeric, got: ${other.getClass.getSimpleName}")
+        case null => return Left("rating cannot be null")
+        case other => return Left(s"rating must be numeric, got: ${other.getClass.getSimpleName}")
       }
 
       val timestamp = row.get(3) match {
         case ts: Long => ts
         case ts: Int => ts.toLong
-        case null => throw new IllegalArgumentException("timestamp cannot be null")
-        case other => throw new IllegalArgumentException(s"timestamp must be numeric, got: ${other.getClass.getSimpleName}")
+        case null => return Left("timestamp cannot be null")
+        case other => return Left(s"timestamp must be numeric, got: ${other.getClass.getSimpleName}")
       }
 
       Rating(userId, movieId, rating, timestamp)

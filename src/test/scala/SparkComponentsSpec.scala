@@ -1,29 +1,13 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.BeforeAndAfterAll
-import org.apache.spark.sql.SparkSession
 
 /**
  * Test suite for Spark bootstrap and dataset ingestion components.
- * 
+ *
  * This test class verifies that SparkBootstrap, Paths, and DatasetIngestion
  * components work correctly with test data files and proper SparkSession management.
  */
-class SparkComponentsSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
-
-  var spark: SparkSession = _
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    spark = SparkBootstrap.session("SparkComponentsTest")
-  }
-
-  override def afterAll(): Unit = {
-    if (spark != null) {
-      spark.stop()
-    }
-    super.afterAll()
-  }
+class SparkComponentsSpec extends AnyFlatSpec with Matchers with SparkTestBase {
 
   "SparkBootstrap" should "create a valid SparkSession" in {
     spark should not be null
@@ -80,8 +64,11 @@ class SparkComponentsSpec extends AnyFlatSpec with Matchers with BeforeAndAfterA
 
   "DatasetIngestion" should "load movies test data successfully" in {
     val testMoviesPath = "src/test/resources/test_movies.csv"
-    val moviesDF = DatasetIngestion.loadMovies(spark, testMoviesPath)
-    
+    val moviesDF = DatasetIngestion.loadMovies(spark, testMoviesPath) match {
+      case Right(df) => df
+      case Left(error) => fail(s"Failed to load movies: $error")
+    }
+
     moviesDF should not be null
     moviesDF.count() should be > 0L
     
@@ -93,8 +80,11 @@ class SparkComponentsSpec extends AnyFlatSpec with Matchers with BeforeAndAfterA
 
   it should "load ratings test data successfully" in {
     val testRatingsPath = "src/test/resources/test_ratings.csv"
-    val ratingsDF = DatasetIngestion.loadRatings(spark, testRatingsPath)
-    
+    val ratingsDF = DatasetIngestion.loadRatings(spark, testRatingsPath) match {
+      case Right(df) => df
+      case Left(error) => fail(s"Failed to load ratings: $error")
+    }
+
     ratingsDF should not be null
     ratingsDF.count() should be > 0L
     
@@ -107,7 +97,10 @@ class SparkComponentsSpec extends AnyFlatSpec with Matchers with BeforeAndAfterA
 
   it should "validate movies dataset schema and content" in {
     val testMoviesPath = "src/test/resources/test_movies.csv"
-    val moviesDF = DatasetIngestion.loadMovies(spark, testMoviesPath)
+    val moviesDF = DatasetIngestion.loadMovies(spark, testMoviesPath) match {
+      case Right(df) => df
+      case Left(error) => fail(s"Failed to load movies: $error")
+    }
     
     val schema = moviesDF.schema
     val movieIdField = schema.find(_.name == "movieId")
@@ -130,7 +123,10 @@ class SparkComponentsSpec extends AnyFlatSpec with Matchers with BeforeAndAfterA
 
   it should "validate ratings dataset schema and content" in {
     val testRatingsPath = "src/test/resources/test_ratings.csv"
-    val ratingsDF = DatasetIngestion.loadRatings(spark, testRatingsPath)
+    val ratingsDF = DatasetIngestion.loadRatings(spark, testRatingsPath) match {
+      case Right(df) => df
+      case Left(error) => fail(s"Failed to load ratings: $error")
+    }
     
     val schema = ratingsDF.schema
     val userIdField = schema.find(_.name == "userId")
@@ -164,8 +160,14 @@ class SparkComponentsSpec extends AnyFlatSpec with Matchers with BeforeAndAfterA
     val testMoviesPath = "src/test/resources/test_movies.csv"
     val testRatingsPath = "src/test/resources/test_ratings.csv"
     
-    val moviesDF = DatasetIngestion.loadMovies(spark, testMoviesPath)
-    val ratingsDF = DatasetIngestion.loadRatings(spark, testRatingsPath)
+    val moviesDF = DatasetIngestion.loadMovies(spark, testMoviesPath) match {
+      case Right(df) => df
+      case Left(error) => fail(s"Failed to load movies: $error")
+    }
+    val ratingsDF = DatasetIngestion.loadRatings(spark, testRatingsPath) match {
+      case Right(df) => df
+      case Left(error) => fail(s"Failed to load ratings: $error")
+    }
     
     // Join operation to verify both datasets work together
     val joinedDF = ratingsDF.join(moviesDF, "movieId")

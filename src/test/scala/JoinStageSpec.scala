@@ -1,7 +1,6 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.BeforeAndAfterAll
-import org.apache.spark.sql.{SparkSession, Dataset}
+import org.apache.spark.sql.Dataset
 
 /**
  * Test suite for JoinStage join and Top-N operations.
@@ -10,21 +9,7 @@ import org.apache.spark.sql.{SparkSession, Dataset}
  * inner joins between movies and stats, filtering by minimum count,
  * and ordering with tie-breaking logic using tiny datasets.
  */
-class JoinStageSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
-
-  var spark: SparkSession = _
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    spark = SparkBootstrap.session("JoinStageTest")
-  }
-
-  override def afterAll(): Unit = {
-    if (spark != null) {
-      spark.stop()
-    }
-    super.afterAll()
-  }
+class JoinStageSpec extends AnyFlatSpec with Matchers with SparkTestBase {
 
   /**
    * Creates test movies dataset with varied titles for tie-breaking tests.

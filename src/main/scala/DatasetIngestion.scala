@@ -1,5 +1,6 @@
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.apache.spark.sql.types._
+import org.apache.spark.sql.types.{StructType, StructField, IntegerType, StringType, DoubleType, LongType}
+import scala.util.{Try, Success, Failure}
 
 /**
  * Dataset ingestion utilities for loading CSV/TSV files into Spark DataFrames.
@@ -33,19 +34,19 @@ object DatasetIngestion {
 
   /**
    * Loads movies dataset from CSV file.
-   * 
+   *
    * This function reads a CSV file containing movie information with predefined schema.
    * Includes comprehensive debugging output including path validation, schema information,
    * sample data preview, and record count statistics.
-   * 
+   *
    * @param spark The SparkSession to use for data loading
    * @param path The file path to the movies CSV file
-   * @return DataFrame containing movies data with columns: movieId, title, genres
+   * @return Either[String, DataFrame] - Left with error message on failure, Right with DataFrame on success
    */
-  def loadMovies(spark: SparkSession, path: String): DataFrame = {
+  def loadMovies(spark: SparkSession, path: String): Either[String, DataFrame] = {
     println(s"DEBUG: Loading movies dataset from path: $path")
-    
-    try {
+
+    Try {
       val df = spark.read
         .option("header", "true")
         .option("inferSchema", "false")
@@ -74,28 +75,29 @@ object DatasetIngestion {
       }
 
       df
-    } catch {
-      case e: Exception =>
+    } match {
+      case Success(df) => Right(df)
+      case Failure(e) =>
         println(s"DEBUG: ERROR loading movies dataset: ${e.getMessage}")
-        throw e
+        Left(e.getMessage)
     }
   }
 
   /**
    * Loads ratings dataset from CSV file.
-   * 
+   *
    * This function reads a CSV file containing user rating information with predefined schema.
    * Includes comprehensive debugging output including path validation, schema information,
    * sample data preview, and record count statistics.
-   * 
+   *
    * @param spark The SparkSession to use for data loading
    * @param path The file path to the ratings CSV file
-   * @return DataFrame containing ratings data with columns: userId, movieId, rating, timestamp
+   * @return Either[String, DataFrame] - Left with error message on failure, Right with DataFrame on success
    */
-  def loadRatings(spark: SparkSession, path: String): DataFrame = {
+  def loadRatings(spark: SparkSession, path: String): Either[String, DataFrame] = {
     println(s"DEBUG: Loading ratings dataset from path: $path")
-    
-    try {
+
+    Try {
       val df = spark.read
         .option("header", "true")
         .option("inferSchema", "false")
@@ -132,10 +134,11 @@ object DatasetIngestion {
       }
 
       df
-    } catch {
-      case e: Exception =>
+    } match {
+      case Success(df) => Right(df)
+      case Failure(e) =>
         println(s"DEBUG: ERROR loading ratings dataset: ${e.getMessage}")
-        throw e
+        Left(e.getMessage)
     }
   }
 

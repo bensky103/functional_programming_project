@@ -1,6 +1,5 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.BeforeAndAfterAll
 import java.io.{File, PrintWriter}
 import java.nio.file.Files
 import scala.io.Source
@@ -18,9 +17,9 @@ import scala.io.Source
  * The tests use minimal sample data to verify the complete pipeline from
  * data loading through final output generation.
  */
-class DriverSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
+class DriverSpec extends AnyFlatSpec with Matchers with SparkTestBase {
 
-  var tempDir: java.nio.file.Path = _
+  var driverTempDir: java.nio.file.Path = _
   var moviesFile: File = _
   var ratingsFile: File = _
   var outputDir: File = _
@@ -29,12 +28,12 @@ class DriverSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
     super.beforeAll()
 
     // Create temporary directory for test files
-    tempDir = Files.createTempDirectory("driver-e2e-test")
-    outputDir = tempDir.resolve("output").toFile
+    driverTempDir = Files.createTempDirectory("driver-e2e-test")
+    outputDir = driverTempDir.resolve("output").toFile
     outputDir.mkdirs()
 
     // Create mini movies dataset
-    moviesFile = tempDir.resolve("test_movies.csv").toFile
+    moviesFile = driverTempDir.resolve("test_movies.csv").toFile
     val moviesWriter = new PrintWriter(moviesFile)
     moviesWriter.println("movieId,title,genres")
     moviesWriter.println("1,The Shawshank Redemption,Drama")
@@ -45,7 +44,7 @@ class DriverSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
     moviesWriter.close()
 
     // Create mini ratings dataset with known top movie
-    ratingsFile = tempDir.resolve("test_ratings.csv").toFile
+    ratingsFile = driverTempDir.resolve("test_ratings.csv").toFile
     val ratingsWriter = new PrintWriter(ratingsFile)
     ratingsWriter.println("userId,movieId,rating,timestamp")
 
@@ -85,15 +84,9 @@ class DriverSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
-    // Clean up temporary files
-    if (tempDir != null) {
-      def deleteRecursively(file: File): Unit = {
-        if (file.isDirectory) {
-          file.listFiles().foreach(deleteRecursively)
-        }
-        file.delete()
-      }
-      deleteRecursively(tempDir.toFile)
+    // Clean up driver temporary files
+    if (driverTempDir != null) {
+      deleteRecursively(driverTempDir.toFile)
     }
     super.afterAll()
   }
@@ -203,17 +196,20 @@ class DriverSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
         message should include("Pipeline completed successfully")
 
         // Verify output files exist (only if pipeline succeeded)
-        val csvOutputDir = new File(outputDir, "top_movies.csv")
-        val jsonOutputDir = new File(outputDir, "top_movies.json")
+        val csvOutput = new File(outputDir, "top_movies.csv")
+        val jsonOutput = new File(outputDir, "top_movies.json")
 
-        csvOutputDir should exist
-        jsonOutputDir should exist
+        csvOutput should exist
+        jsonOutput should exist
 
-        // Find actual CSV file (Spark creates part files)
-        val csvFiles = csvOutputDir.listFiles().filter(file => file.getName.startsWith("part-") && file.getName.endsWith(".csv"))
-        csvFiles should have length 1
-
-        val csvFile = csvFiles.head
+        // Find actual CSV file (handle both directory and single file output)
+        val csvFile = if (csvOutput.isDirectory) {
+          val csvFiles = Option(csvOutput.listFiles()).getOrElse(Array.empty).filter(file => file.getName.startsWith("part-") && (file.getName.endsWith(".csv") || !file.getName.contains(".")))
+          csvFiles should have length 1
+          csvFiles.head
+        } else {
+          csvOutput
+        }
         val csvContent = Source.fromFile(csvFile).getLines().toList
 
         println(s"DEBUG: CSV output content:")
@@ -234,11 +230,14 @@ class DriverSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
         println(s"DEBUG: Top movie verified: $topMovie")
 
-        // Find actual JSON file
-        val jsonFiles = jsonOutputDir.listFiles().filter(file => file.getName.startsWith("part-") && file.getName.endsWith(".json"))
-        jsonFiles should have length 1
-
-        val jsonFile = jsonFiles.head
+        // Find actual JSON file (handle both directory and single file output)
+        val jsonFile = if (jsonOutput.isDirectory) {
+          val jsonFiles = Option(jsonOutput.listFiles()).getOrElse(Array.empty).filter(file => file.getName.startsWith("part-") && (file.getName.endsWith(".json") || !file.getName.contains(".")))
+          jsonFiles should have length 1
+          jsonFiles.head
+        } else {
+          jsonOutput
+        }
         val jsonContent = Source.fromFile(jsonFile).getLines().toList
 
         println(s"DEBUG: JSON output content:")
@@ -302,28 +301,35 @@ class DriverSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
 
   "Driver output generation" should "create properly formatted CSV and JSON files" in {
     // This test runs after the E2E test, so output should exist
-    val csvOutputDir = new File(outputDir, "top_movies.csv")
-    val jsonOutputDir = new File(outputDir, "top_movies.json")
+    val csvOutput = new File(outputDir, "top_movies.csv")
+    val jsonOutput = new File(outputDir, "top_movies.json")
 
-    if (csvOutputDir.exists() && jsonOutputDir.exists()) {
-      // Verify coalesce(1) worked - should have exactly one part file each
-      val csvPartFiles = csvOutputDir.listFiles().filter(_.getName.startsWith("part-"))
-      val jsonPartFiles = jsonOutputDir.listFiles().filter(_.getName.startsWith("part-"))
+    if (csvOutput.exists() && jsonOutput.exists()) {
+      // Handle both Spark distributed output (directories) and manual output (files)
+      val csvFile = if (csvOutput.isDirectory) {
+        val partFiles = Option(csvOutput.listFiles()).getOrElse(Array.empty).filter(_.getName.startsWith("part-"))
+        partFiles should have length 1
+        partFiles.head
+      } else {
+        csvOutput // Manual single file output
+      }
 
-      csvPartFiles should have length 1
-      jsonPartFiles should have length 1
+      val jsonFile = if (jsonOutput.isDirectory) {
+        val partFiles = Option(jsonOutput.listFiles()).getOrElse(Array.empty).filter(_.getName.startsWith("part-"))
+        partFiles should have length 1
+        partFiles.head
+      } else {
+        jsonOutput // Manual single file output
+      }
 
       // Verify CSV content structure
-      val csvFile = csvPartFiles.head
       csvFile.length() should be > 0L // File should not be empty
-
       val csvLines = Source.fromFile(csvFile).getLines().toList
       csvLines should not be empty
       csvLines.head shouldBe "title,count,average" // Header validation
       csvLines.length should be > 1 // Should have data rows
 
       // Verify JSON content structure
-      val jsonFile = jsonPartFiles.head
       jsonFile.length() should be > 0L // File should not be empty
 
       val jsonLines = Source.fromFile(jsonFile).getLines().toList
@@ -341,12 +347,21 @@ class DriverSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   }
 
   it should "verify CSV and JSON files contain identical data in different formats" in {
-    val csvOutputDir = new File(outputDir, "top_movies.csv")
-    val jsonOutputDir = new File(outputDir, "top_movies.json")
+    val csvOutput = new File(outputDir, "top_movies.csv")
+    val jsonOutput = new File(outputDir, "top_movies.json")
 
-    if (csvOutputDir.exists() && jsonOutputDir.exists()) {
-      val csvFile = csvOutputDir.listFiles().filter(_.getName.startsWith("part-")).headOption
-      val jsonFile = jsonOutputDir.listFiles().filter(_.getName.startsWith("part-")).headOption
+    if (csvOutput.exists() && jsonOutput.exists()) {
+      val csvFile = if (csvOutput.isDirectory) {
+        Option(csvOutput.listFiles()).getOrElse(Array.empty).filter(_.getName.startsWith("part-")).headOption
+      } else {
+        Some(csvOutput)
+      }
+
+      val jsonFile = if (jsonOutput.isDirectory) {
+        Option(jsonOutput.listFiles()).getOrElse(Array.empty).filter(_.getName.startsWith("part-")).headOption
+      } else {
+        Some(jsonOutput)
+      }
 
       if (csvFile.isDefined && jsonFile.isDefined) {
         // Parse CSV data (skip header)
@@ -384,12 +399,21 @@ class DriverSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
   }
 
   it should "validate minimal content requirements for output files" in {
-    val csvOutputDir = new File(outputDir, "top_movies.csv")
-    val jsonOutputDir = new File(outputDir, "top_movies.json")
+    val csvOutput = new File(outputDir, "top_movies.csv")
+    val jsonOutput = new File(outputDir, "top_movies.json")
 
-    if (csvOutputDir.exists() && jsonOutputDir.exists()) {
-      val csvFile = csvOutputDir.listFiles().filter(_.getName.startsWith("part-")).headOption
-      val jsonFile = jsonOutputDir.listFiles().filter(_.getName.startsWith("part-")).headOption
+    if (csvOutput.exists() && jsonOutput.exists()) {
+      val csvFile = if (csvOutput.isDirectory) {
+        Option(csvOutput.listFiles()).getOrElse(Array.empty).filter(_.getName.startsWith("part-")).headOption
+      } else {
+        Some(csvOutput)
+      }
+
+      val jsonFile = if (jsonOutput.isDirectory) {
+        Option(jsonOutput.listFiles()).getOrElse(Array.empty).filter(_.getName.startsWith("part-")).headOption
+      } else {
+        Some(jsonOutput)
+      }
 
       if (csvFile.isDefined && jsonFile.isDefined) {
         // CSV validation

@@ -1,9 +1,8 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.BeforeAndAfterAll
-import org.apache.spark.sql.{SparkSession, Dataset, Row}
+import org.apache.spark.sql.{Dataset, Row}
 import org.apache.spark.sql.types._
-import java.io.{File, PrintWriter}
+import java.io.PrintWriter
 import java.nio.file.Files
 
 /**
@@ -17,20 +16,14 @@ import java.nio.file.Files
  *
  * Each test includes DEBUG prints to demonstrate the techniques in action.
  */
-class AdvancedFPAuditSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
-
-  var spark: SparkSession = _
+class AdvancedFPAuditSpec extends AnyFlatSpec with Matchers with SparkTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    spark = SparkBootstrap.session("AdvancedFPAuditTest")
     println("DEBUG: Starting Advanced FP Techniques Audit Test Suite")
   }
 
   override def afterAll(): Unit = {
-    if (spark != null) {
-      spark.stop()
-    }
     super.afterAll()
     println("DEBUG: Advanced FP Techniques Audit Test Suite completed")
   }

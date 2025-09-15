@@ -35,9 +35,12 @@ object ValidatedLoader {
     
     Try {
       println(s"DEBUG: Starting validated movie loading from: $path")
-      
+
       // Load raw DataFrame using existing DatasetIngestion
-      val rawDF = DatasetIngestion.loadMovies(spark, path)
+      val rawDF = DatasetIngestion.loadMovies(spark, path) match {
+        case Right(df) => df
+        case Left(error) => throw new RuntimeException(s"Failed to load movies: $error")
+      }
       val totalCount = rawDF.count()
       println(s"DEBUG: Total raw movie records: $totalCount")
       
@@ -105,9 +108,12 @@ object ValidatedLoader {
     
     Try {
       println(s"DEBUG: Starting validated rating loading from: $path")
-      
+
       // Load raw DataFrame using existing DatasetIngestion
-      val rawDF = DatasetIngestion.loadRatings(spark, path)
+      val rawDF = DatasetIngestion.loadRatings(spark, path) match {
+        case Right(df) => df
+        case Left(error) => throw new RuntimeException(s"Failed to load ratings: $error")
+      }
       val totalCount = rawDF.count()
       println(s"DEBUG: Total raw rating records: $totalCount")
       

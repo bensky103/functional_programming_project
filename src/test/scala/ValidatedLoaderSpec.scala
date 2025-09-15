@@ -1,52 +1,13 @@
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.BeforeAndAfterAll
-import org.apache.spark.sql.SparkSession
-import java.io.{File, PrintWriter}
-import java.nio.file.{Files, Path}
 
 /**
  * Test suite for ValidatedLoader functionality.
- * 
+ *
  * Tests the complete pipeline of loading, parsing, and validating datasets
  * with mixed good and bad data to verify proper error handling and counts.
  */
-class ValidatedLoaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfterAll {
-  
-  var spark: SparkSession = _
-  var tempDir: Path = _
-  
-  override def beforeAll(): Unit = {
-    spark = SparkSession.builder()
-      .appName("ValidatedLoaderSpec")
-      .master("local[*]")
-      .config("spark.sql.adaptive.enabled", "false")
-      .config("spark.sql.adaptive.coalescePartitions.enabled", "false")
-      .getOrCreate()
-    
-    spark.sparkContext.setLogLevel("WARN")
-    tempDir = Files.createTempDirectory("validated-loader-test")
-  }
-  
-  override def afterAll(): Unit = {
-    if (spark != null) {
-      spark.stop()
-    }
-    // Clean up temp directory
-    tempDir.toFile.listFiles().foreach(_.delete())
-    tempDir.toFile.delete()
-  }
-  
-  private def createTempFile(content: String, filename: String): String = {
-    val file = new File(tempDir.toFile, filename)
-    val writer = new PrintWriter(file)
-    try {
-      writer.write(content)
-    } finally {
-      writer.close()
-    }
-    file.getAbsolutePath
-  }
+class ValidatedLoaderSpec extends AnyFlatSpec with Matchers with SparkTestBase {
   
   "loadMovies" should "successfully load valid movies and count failures" in {
     val moviesContent = """movieId,title,genres

@@ -53,7 +53,7 @@ object Driver extends App {
     minRating: Double = 3.0,
     minCount: Long = 10L,
     topN: Int = 10,
-    outputPath: String = "C:/Users/Guy Bensky/Desktop/functional programming projecct/HIT-FP-Spark-Project/output/"
+    outputPath: String = "output/"
   )
 
   /**
@@ -237,7 +237,7 @@ object Driver extends App {
       try {
         csvFile.println("title,count,average")
         results.foreach { case (title, count, avg) =>
-          csvFile.println(s""""$title",$count,$avg""")
+          csvFile.println(s"$title,$count,$avg")
         }
         println(s"DEBUG: Manual CSV writing successful: $csvPath")
       } finally {
