@@ -11,7 +11,7 @@
 /**
  * # Advanced FP Techniques Audit
  *
- * This project implements exactly 3 advanced functional programming techniques:
+ * This project implements exactly 5 advanced functional programming techniques:
  *
  * ## 1. Pattern Matching with Case Classes
  *
@@ -94,15 +94,74 @@
  * that never throw exceptions to callers, instead returning tuples with success data
  * and failure counts. Error information is preserved and logged for debugging.
  *
+ * ## 4. Tail Recursion
+ *
+ * **Location:** `FPUtils.scala`
+ * **Functions:**
+ * - `FPUtils.sumTailRec(numbers: List[Int]): Long` (lines 99-108)
+ * - `FPUtils.factorialTailRec(n: Long): Long` (lines 125-132)
+ * - `FPUtils.lengthTailRec[T](list: List[T]): Int` (lines 150-159)
+ * - `FPUtils.retry[A, B](maxAttempts: Int)(f: A => B)(input: A): Either[Throwable, B]` (lines 205-219)
+ * - `FPUtils.pipeline[A](functions: List[A => A])(input: A): A` (lines 266-275)
+ *
+ * **Implementation Details:**
+ * Tail recursive functions use the `@tailrec` annotation to ensure stack safety
+ * and constant memory usage. Each function uses an accumulator pattern:
+ *
+ * ```scala
+ * def sumTailRec(numbers: List[Int]): Long = {
+ *   @tailrec
+ *   def sumHelper(remaining: List[Int], accumulator: Long): Long = {
+ *     remaining match {
+ *       case Nil => accumulator
+ *       case head :: tail => sumHelper(tail, accumulator + head)
+ *     }
+ *   }
+ *   sumHelper(numbers, 0L)
+ * }
+ * ```
+ *
+ * The tail recursion ensures that large lists (100,000+ elements) can be processed
+ * without stack overflow errors, demonstrating memory-efficient recursive computation.
+ *
+ * ## 5. Custom Combinators
+ *
+ * **Location:** `FPUtils.scala`
+ * **Functions:**
+ * - `FPUtils.maybe[A, B](f: A => B)(input: A): Option[B]` (lines 182-184)
+ * - `FPUtils.retry[A, B](maxAttempts: Int)(f: A => B)(input: A): Either[Throwable, B]` (lines 205-219)
+ * - `FPUtils.conditional[A](predicate: A => Boolean, ifTrue: A => A, ifFalse: A => A)(input: A): A` (lines 242-244)
+ * - `FPUtils.pipeline[A](functions: List[A => A])(input: A): A` (lines 266-275)
+ *
+ * **Implementation Details:**
+ * Custom combinators provide reusable higher-order function patterns for common
+ * functional programming operations:
+ *
+ * ```scala
+ * def maybe[A, B](f: A => B)(input: A): Option[B] = {
+ *   if (input != null) Some(f(input)) else None
+ * }
+ *
+ * def conditional[A](predicate: A => Boolean, ifTrue: A => A, ifFalse: A => A)(input: A): A = {
+ *   if (predicate(input)) ifTrue(input) else ifFalse(input)
+ * }
+ * ```
+ *
+ * These combinators encapsulate common patterns like null-safe application (`maybe`),
+ * retry logic (`retry`), conditional application (`conditional`), and function
+ * composition chains (`pipeline`), demonstrating advanced functional abstraction techniques.
+ *
  * ## Audit Verification
  *
- * These three techniques can be verified through the dedicated test suite that:
+ * These five techniques can be verified through the dedicated test suite that:
  * 1. Exercises pattern matching with valid/invalid row parsing
  * 2. Invokes closure-based transformations with threshold parameters
  * 3. Tests functional error handling with datasets containing bad records
+ * 4. Verifies tail recursion with large datasets (100,000+ elements) without stack overflow
+ * 5. Tests combinators with various input scenarios including edge cases
  *
- * Each technique includes DEBUG print statements for runtime verification and
- * demonstration of the functional programming concepts in action.
+ * Each technique includes comprehensive test coverage and DEBUG print statements for
+ * runtime verification and demonstration of the functional programming concepts in action.
  */
 object AdvancedFPAudit {
   // This is a documentation-only object - no executable code
